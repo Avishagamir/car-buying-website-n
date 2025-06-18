@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckCircle, MapPin, Star, Wrench, Clock, Phone, Navigation, ArrowRight, Sparkles } from "lucide-react"
+import {
+  CheckCircle,
+  MapPin,
+  Star,
+  Wrench,
+  Clock,
+  Phone,
+  Navigation,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react"
 
 declare global {
   interface Window {
@@ -46,7 +56,6 @@ export default function CarPurchasedPage() {
   ]
 
   useEffect(() => {
-    // טעינת Google Maps API
     const script = document.createElement("script")
     script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDZT4USQ-MU6DycIUZGeCLCzklS0TF-8yY&libraries=places`
     script.async = true
@@ -60,7 +69,40 @@ export default function CarPurchasedPage() {
   }, [])
 
   const handleCheckToggle = (check: string) => {
-    setSelectedChecks((prev) => (prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]))
+    setSelectedChecks((prev) =>
+      prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]
+    )
+  }
+
+  const getNearbyRepairShops = (location: google.maps.LatLngLiteral) => {
+    const map = new window.google.maps.Map(document.createElement("div"))
+    const service = new window.google.maps.places.PlacesService(map)
+
+    const request: google.maps.places.PlaceSearchRequest = {
+      location,
+      radius: 5000,
+      keyword: "מוסך",
+      type: "car_repair",
+    }
+
+    service.nearbySearch(request, (results: any[], status: any) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+        const mappedResults: RepairShop[] = results.map((place) => ({
+          name: place.name || "לא ידוע",
+          rating: place.rating || 0,
+          address: place.vicinity || "",
+          phone: "", // כדי לקבל צריך getDetails
+          distance: "", // אפשר להוסיף חישוב בהמשך
+          isOpen: place.opening_hours?.isOpen() ?? false,
+        }))
+
+        setRepairShops(mappedResults)
+        setLoading(false)
+      } else {
+        alert("לא נמצאו מוסכים באזור שלך.")
+        setLoading(false)
+      }
+    })
   }
 
   const findRepairShops = () => {
@@ -72,54 +114,16 @@ export default function CarPurchasedPage() {
     setLoading(true)
     setShowRepairShops(true)
 
-    // סימולציה של חיפוש מוסכים (במקום API אמיתי)
-    setTimeout(() => {
-      const mockRepairShops: RepairShop[] = [
-        {
-          name: "מוסך אלון - בדיקות טכניות מקצועיות",
-          rating: 4.8,
-          address: "רחוב הרצל 45, תל אביב",
-          phone: "03-5551234",
-          distance: '1.2 ק"מ',
-          isOpen: true,
-        },
-        {
-          name: "מרכז בדיקות BMW מורשה",
-          rating: 4.6,
-          address: "שדרות רוקח 15, תל אביב",
-          phone: "03-5555678",
-          distance: '2.1 ק"מ',
-          isOpen: true,
-        },
-        {
-          name: "מוסך דוד - בדיקות מהירות",
-          rating: 4.4,
-          address: "רחוב יהודה הלוי 23, תל אביב",
-          phone: "03-5559876",
-          distance: '1.8 ק"מ',
-          isOpen: false,
-        },
-        {
-          name: "אוטו סנטר - בדיקות מקיפות",
-          rating: 4.7,
-          address: "רחוב דיזנגוף 112, תל אביב",
-          phone: "03-5554321",
-          distance: '2.5 ק"מ',
-          isOpen: true,
-        },
-        {
-          name: "מוסך הכוכב - מומחים לבדיקות רכב",
-          rating: 4.9,
-          address: "רחוב אבן גבירול 78, תל אביב",
-          phone: "03-5557890",
-          distance: '1.6 ק"מ',
-          isOpen: true,
-        },
-      ]
-
-      setRepairShops(mockRepairShops)
-      setLoading(false)
-    }, 2000)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        getNearbyRepairShops({ lat: latitude, lng: longitude })
+      },
+      (error) => {
+        alert("לא ניתן לקבל מיקום. ודא שהרשית גישה למיקום.")
+        setLoading(false)
+      }
+    )
   }
 
   const openInGoogleMaps = (address: string) => {
@@ -154,181 +158,6 @@ export default function CarPurchasedPage() {
           </div>
         </div>
       </header>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Success Message */}
-        <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <CheckCircle className="h-12 w-12 text-white" />
-          </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">מזל טוב! 🎉</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            יצרת קשר עם המוכר בהצלחה! לפני שתתחיל לנהוג, חשוב לבצע בדיקה ראשונית של הרכב כדי לוודא שהכל תקין ובטוח.
-          </p>
-        </div>
-
-        {/* Car Inspection Checklist */}
-        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm mb-8">
-          <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
-            <CardTitle className="flex items-center text-2xl">
-              <Sparkles className="h-6 w-6 mr-3" />
-              בדיקה ראשונית - מה חשוב לבדוק ברכב?
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
-            <p className="text-gray-600 mb-6 text-lg">
-              בחר את הבדיקות שחשוב לך לבצע ברכב החדש. זה יעזור לנו למצוא לך מוסכים מתאימים שמתמחים בבדיקות אלו.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              {carChecks.map((check, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    selectedChecks.includes(check)
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleCheckToggle(check)}
-                >
-                  <Checkbox
-                    checked={selectedChecks.includes(check)}
-                    onChange={() => handleCheckToggle(check)}
-                    className="order-2"
-                  />
-                  <label className="cursor-pointer flex-1 order-1 text-right" dir="rtl">
-                    {check}
-                  </label>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center">
-              <Button
-                onClick={findRepairShops}
-                disabled={selectedChecks.length === 0 || loading}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    מחפש מוסכים מתאימים...
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-2" />
-                    מצא מוסכים לבדיקה
-                  </div>
-                )}
-              </Button>
-              <p className="text-sm text-gray-500 mt-2">
-                נבחרו {selectedChecks.length} בדיקות • מינימום בדיקה אחת נדרשת
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Repair Shops Results */}
-        {showRepairShops && (
-          <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center text-2xl">
-                <Wrench className="h-6 w-6 mr-3" />
-                מוסכים מומלצים לבדיקה ראשונית
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8">
-              {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">מחפש מוסכים מתאימים לבדיקות שבחרת...</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <p className="text-gray-600 mb-6">
-                    מצאנו {repairShops.length} מוסכים מומלצים באזורך שמתמחים בבדיקות שבחרת:
-                  </p>
-
-                  {repairShops.map((shop, index) => (
-                    <Card
-                      key={index}
-                      className="border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">{shop.name}</h3>
-                            <div className="flex items-center mb-2">
-                              <div className="flex items-center mr-4">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-4 w-4 ${
-                                      i < Math.floor(shop.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
-                                    }`}
-                                  />
-                                ))}
-                                <span className="ml-2 text-gray-600 font-medium">{shop.rating}</span>
-                              </div>
-                              <Badge
-                                variant={shop.isOpen ? "default" : "secondary"}
-                                className={shop.isOpen ? "bg-green-600" : "bg-gray-500"}
-                              >
-                                <Clock className="h-3 w-3 mr-1" />
-                                {shop.isOpen ? "פתוח עכשיו" : "סגור"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="text-blue-600 border-blue-300">
-                            {shop.distance}
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center text-gray-600">
-                            <MapPin className="h-4 w-4 mr-2" />
-                            <span>{shop.address}</span>
-                          </div>
-                          <div className="flex items-center text-gray-600">
-                            <Phone className="h-4 w-4 mr-2" />
-                            <span>{shop.phone}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex space-x-3">
-                          <Button
-                            onClick={() => openInGoogleMaps(shop.address)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          >
-                            <Navigation className="h-4 w-4 mr-2" />
-                            נווט במפות גוגל
-                          </Button>
-                          <Button variant="outline" className="flex-1">
-                            <Phone className="h-4 w-4 mr-2" />
-                            התקשר
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  <div className="text-center mt-8">
-                    <p className="text-gray-600 mb-4">מצאת את מה שחיפשת?</p>
-                    <Button
-                      onClick={() => router.push("/buyer")}
-                      variant="outline"
-                      className="border-2 border-green-300 hover:bg-green-50"
-                    >
-                      חזור לחיפוש רכבים נוספים
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
     </div>
   )
 }
