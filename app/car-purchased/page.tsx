@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,8 +31,8 @@ export default function CarPurchasedPage() {
   const [repairShops, setRepairShops] = useState<RepairShop[]>([])
   const [loading, setLoading] = useState(false)
   const [searchLocation, setSearchLocation] = useState<string>("תל אביב") // ברירת מחדל
-  const autocompleteRef = useRef<HTMLInputElement>(null)
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null)
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null)
+  const [placeAutocomplete, setPlaceAutocomplete] = useState<any>(null) // מסוג PlaceAutocompleteElement
 
   const carChecks = [
     "בדיקת פנסים קדמיים ואחוריים",
@@ -49,50 +49,56 @@ export default function CarPurchasedPage() {
     "בדיקת מערכת ניווט ובידור",
   ]
 
+  // טוען את סקריפט Google Maps עם ה־API KEY ויצירת PlaceAutocompleteElement
   useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
-      script.async = true
-      document.head.appendChild(script)
+    if (window.google?.maps?.places?.PlaceAutocompleteElement) {
+      setupPlaceAutocomplete()
+      return
+    }
 
-      script.onload = () => {
-        if (autocompleteRef.current) {
-          setAutocomplete(new window.google.maps.places.Autocomplete(autocompleteRef.current, { types: ["(cities)"], componentRestrictions: { country: "il" } }))
-        }
-      }
-    } else {
-      if (autocompleteRef.current) {
-        setAutocomplete(new window.google.maps.places.Autocomplete(autocompleteRef.current, { types: ["(cities)"], componentRestrictions: { country: "il" } }))
-      }
+    const script = document.createElement("script")
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+    script.async = true
+    document.head.appendChild(script)
+
+    script.onload = () => {
+      setupPlaceAutocomplete()
     }
   }, [])
 
-  useEffect(() => {
-    if (!autocomplete) return
+  // הגדרת ה-PlaceAutocompleteElement והשמעת אירוע בחירה
+  function setupPlaceAutocomplete() {
+    if (!autocompleteContainerRef.current) return
 
-    const listener = autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace()
-      if (place.formatted_address) {
+    // Create PlaceAutocompleteElement
+    const element = new window.google.maps.places.PlaceAutocompleteElement({
+      // תוכל לשנות להגבלות שתרצה, כאן לדוגמה רק ישראל
+      componentRestrictions: { country: ["il"] },
+      fields: ["address_components", "formatted_address", "geometry", "name"],
+      types: ["(cities)"],
+    })
+
+    // מחברים אותו לאלמנט הריק בדיב שלנו
+    element.mount(autocompleteContainerRef.current)
+
+    element.addListener("change", () => {
+      const place = element.getPlace()
+      if (place && place.formatted_address) {
         setSearchLocation(place.formatted_address)
-      } else if (place.name) {
+      } else if (place && place.name) {
         setSearchLocation(place.name)
       }
     })
 
-    return () => {
-      if (listener) {
-        listener.remove()
-      }
-    }
-  }, [autocomplete])
+    setPlaceAutocomplete(element)
+  }
 
   const handleCheckToggle = (check: string) => {
     setSelectedChecks((prev) => (prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]))
   }
 
   const findRepairShops = () => {
-    if (!window.google) {
+    if (!window.google || !window.google.maps.places.Place) {
       alert("Google Maps לא נטען עדיין. אנא נסה שוב.")
       return
     }
@@ -100,29 +106,30 @@ export default function CarPurchasedPage() {
     setLoading(true)
     setShowRepairShops(true)
 
-    // מחפש מוסכים באזור לפי searchLocation
-    const service = new window.google.maps.places.PlacesService(document.createElement("div"))
-    const request = {
-      query: "מוסך",
-      location: null as google.maps.LatLng | null,
-      radius: 15000, // 15 ק"מ
-    }
-
-    // משתמש ב-Geocode כדי לקבל מיקום מהטקסט
     const geocoder = new window.google.maps.Geocoder()
-    geocoder.geocode({ address: searchLocation }, (results, status) => {
+    geocoder.geocode({ address: searchLocation }, (results: any, status: string) => {
       if (status === "OK" && results && results.length > 0) {
-        request.location = results[0].geometry.location
+        const location = results[0].geometry.location
 
-        service.textSearch(request, (results, status) => {
+        // השתמש ב־Place API החדש
+        const placeService = new window.google.maps.places.Place()
+
+        // מחפש מוסכים בטווח של 15 ק"מ מהנקודה
+        const request = {
+          location,
+          radius: 15000,
+          keyword: "מוסך",
+        }
+
+        // נקבל תוצאות
+        placeService.nearbySearch(request, (results: any[], status: string) => {
           if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-            // ממירים את התוצאות למבנה RepairShop
             const shops = results.slice(0, 10).map((place) => ({
               name: place.name || "לא ידוע",
               rating: place.rating || 0,
-              address: place.formatted_address || "",
+              address: place.vicinity || "",
               phone: place.formatted_phone_number || "אין מידע",
-              distance: calculateDistance(request.location!, place.geometry?.location) + " ק\"מ",
+              distance: calculateDistance(location, place.geometry?.location) + " ק\"מ",
               isOpen: place.opening_hours?.isOpen() ?? false,
               location: place.geometry?.location,
             }))
@@ -140,7 +147,7 @@ export default function CarPurchasedPage() {
     })
   }
 
-  // פונקציה לחישוב מרחק בק"מ בין שני נקודות גיאוגרפיות
+  // פונקציה לחישוב מרחק בק"מ בין שתי נקודות גיאוגרפיות
   function calculateDistance(loc1: google.maps.LatLng, loc2?: google.maps.LatLng) {
     if (!loc2) return "לא ידוע"
     const R = 6371 // רדיוס כדור הארץ בק"מ
@@ -223,11 +230,7 @@ export default function CarPurchasedPage() {
                   }`}
                   onClick={() => handleCheckToggle(check)}
                 >
-                  <Checkbox
-                    checked={selectedChecks.includes(check)}
-                    onChange={() => handleCheckToggle(check)}
-                    className="order-2"
-                  />
+                  <Checkbox checked={selectedChecks.includes(check)} onChange={() => handleCheckToggle(check)} className="order-2" />
                   <label className="cursor-pointer flex-1 order-1 text-right" dir="rtl">
                     {check}
                   </label>
@@ -235,21 +238,18 @@ export default function CarPurchasedPage() {
               ))}
             </div>
 
-            {/* שדה חיפוש מיקום ידני */}
+            {/* שדה חיפוש מיקום - פה לא משתמשים ב-input רגיל אלא בדיב עליו יוצב ה-PlaceAutocompleteElement */}
             <div className="mb-6 text-right">
               <label htmlFor="location-input" className="block mb-2 font-semibold text-gray-700">
                 חפש מוסכים באזור אחר (עיר/כתובת):
               </label>
-              <input
+              <div
                 id="location-input"
-                ref={autocompleteRef}
-                type="text"
-                placeholder="הקלד עיר או כתובת"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                defaultValue={searchLocation}
-                onChange={(e) => setSearchLocation(e.target.value)}
+                ref={autocompleteContainerRef}
+                className="w-full p-3 border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-green-500"
                 dir="rtl"
-              />
+                style={{ minHeight: 40 }}
+              ></div>
             </div>
 
             <div className="text-center">
@@ -355,25 +355,13 @@ export default function CarPurchasedPage() {
                             נווט במפות גוגל
                           </Button>
                           <Button variant="outline" className="flex-1">
-                            <Phone className="h-4 w-4 ml-2" />
-                            התקשר
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                            פרטים נוספים
                           </Button>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-
-                  <div className="text-center mt-8">
-                    <p className="text-gray-600 mb-4">מצאת את מה שחיפשת?</p>
-                    <Button
-                      onClick={() => router.push("/buyer")}
-                      variant="outline"
-                      className="border-2 border-green-300 hover:bg-green-50"
-                    >
-                      חזור לחיפוש רכבים נוספים
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                    </Button>
-                  </div>
                 </div>
               )}
             </CardContent>
