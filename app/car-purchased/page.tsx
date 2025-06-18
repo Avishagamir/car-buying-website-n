@@ -51,7 +51,13 @@ export default function CarPurchasedPage() {
 
   useEffect(() => {
     const script = document.createElement("script")
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDZT4USQ-MU6DycIUZGeCLCzklS0TF-8yY&libraries=places`
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
+    if (!apiKey) {
+      console.error("Google Maps API key is missing")
+      return
+    }
+
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
     script.async = true
     script.onload = () => initAutocomplete()
     document.head.appendChild(script)
