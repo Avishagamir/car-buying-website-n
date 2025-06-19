@@ -163,12 +163,11 @@ export default function CarPurchasedPage() {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, "_blank")
   }
 
-  // שאר הקוד שלך (UI, עיצוב, כפתורים, כרטיסים וכו') – נשאר בדיוק כמו שהיה.
+  
 
   return (
     <div>
-      {/* שמרי על הרכיב UI שלך כפי שהוא – העיצוב שלך מושלם */}
-      {/* רק וידאתי שכל חלק שמתממשק עם Google Maps עובד כמו שצריך */}
+     
     </div>
   )
 }
