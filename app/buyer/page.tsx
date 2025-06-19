@@ -80,15 +80,46 @@ export default function BuyerDashboard() {
   const [recommendationsCount, setRecommendationsCount] = useState(0)
   const [isLimitReached, setIsLimitReached] = useState(false)
   const [carRecommendations, setCarRecommendations] = useState<CarRecommendation[]>([])
+  const [chatHistory, setChatHistory] = useState<Message[]>([])
+  const [savedRecommendations, setSavedRecommendations] = useState<CarRecommendation[]>([])
 
   // טעינת מספר ההמלצות מ-localStorage
   useEffect(() => {
+    // טעינת מספר ההמלצות מ-localStorage
     const savedCount = localStorage.getItem("recommendationsCount")
     if (savedCount) {
       const count = Number.parseInt(savedCount)
       setRecommendationsCount(count)
       if (count >= 2) {
         setIsLimitReached(true)
+      }
+    }
+
+    // טעינת היסטוריית הצ'אט מ-localStorage
+    const savedChatHistory = localStorage.getItem("chatHistory")
+    if (savedChatHistory) {
+      try {
+        const parsedHistory = JSON.parse(savedChatHistory)
+        const historyWithDates = parsedHistory.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }))
+        setMessages(historyWithDates)
+        setChatHistory(historyWithDates)
+      } catch (error) {
+        console.error("Error loading chat history:", error)
+      }
+    }
+
+    // טעינת המלצות שמורות מ-localStorage
+    const savedRecs = localStorage.getItem("savedRecommendations")
+    if (savedRecs) {
+      try {
+        const parsedRecs = JSON.parse(savedRecs)
+        setSavedRecommendations(parsedRecs)
+        setCarRecommendations(parsedRecs)
+      } catch (error) {
+        console.error("Error loading saved recommendations:", error)
       }
     }
   }, [])
@@ -100,6 +131,20 @@ export default function BuyerDashboard() {
       setIsLimitReached(true)
     }
   }, [recommendationsCount])
+
+  // הוסף useEffect חדש לשמירת היסטוריה
+  useEffect(() => {
+    if (messages.length > 1) {
+      // שמור רק אם יש יותר מהודעת הפתיחה
+      localStorage.setItem("chatHistory", JSON.stringify(messages))
+    }
+  }, [messages])
+
+  useEffect(() => {
+    if (carRecommendations.length > 0) {
+      localStorage.setItem("savedRecommendations", JSON.stringify(carRecommendations))
+    }
+  }, [carRecommendations])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -199,6 +244,25 @@ export default function BuyerDashboard() {
     "What's the best luxury car for $60k?",
   ]
 
+  const resetData = () => {
+    localStorage.removeItem("recommendationsCount")
+    localStorage.removeItem("chatHistory")
+    localStorage.removeItem("savedRecommendations")
+    setRecommendationsCount(0)
+    setIsLimitReached(false)
+    setCarRecommendations([])
+    setSavedRecommendations([])
+    setMessages([
+      {
+        id: "1",
+        content:
+          "שלום ובברכה! 👋 אני דני, היועץ הדיגיטלי שלך לרכישת רכבים! 🚗\n\nאני כאן כדי לעזור לך למצוא את הרכב המושלם בדיוק בשבילך - כזה שיתאים לצרכים שלך, לתקציב ולסגנון החיים שלך.\n\nבואו נכיר! איך קוראים לך? ומה מביא אותך לחפש רכב חדש? 😊",
+        role: "assistant",
+        timestamp: new Date(),
+      },
+    ])
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -235,7 +299,7 @@ export default function BuyerDashboard() {
       </header>
 
       {/* Main Content */}
-      <div className="mx-auto p-6">
+      <div className=" mx-auto p-6">
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
@@ -297,17 +361,12 @@ export default function BuyerDashboard() {
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardContent className="p-4">
                 <Button
-                  onClick={() => {
-                    localStorage.removeItem("recommendationsCount")
-                    setRecommendationsCount(0)
-                    setIsLimitReached(false)
-                    setCarRecommendations([])
-                  }}
+                  onClick={resetData}
                   variant="outline"
                   size="sm"
                   className="w-full text-xs border-red-200 hover:border-red-300 hover:bg-red-50"
                 >
-                  איפוס מונה (לבדיקות)
+                  איפוס נתונים (לבדיקות)
                 </Button>
               </CardContent>
             </Card>
@@ -335,10 +394,10 @@ export default function BuyerDashboard() {
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                        className={flex ${message.role === "user" ? "justify-end" : "justify-start"}}
                       >
                         <div
-                          className={`flex max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                          className={flex max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}}
                         >
                           <Avatar
                             className={`h-10 w-10 ${
@@ -364,7 +423,7 @@ export default function BuyerDashboard() {
                           >
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                             <p
-                              className={`text-xs mt-2 ${message.role === "user" ? "text-blue-100" : "text-gray-500"}`}
+                              className={text-xs mt-2 ${message.role === "user" ? "text-blue-100" : "text-gray-500"}}
                             >
                               {message.timestamp.toLocaleTimeString()}
                             </p>
@@ -403,7 +462,7 @@ export default function BuyerDashboard() {
                                 </div>
                                 <div className="h-48 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
                                   <img
-                                    src={`/placeholder.svg?height=200&width=400&text=${encodeURIComponent(car.car_name)}`}
+                                    src={/placeholder.svg?height=200&width=400&text=${encodeURIComponent(car.car_name)}}
                                     alt={car.car_name}
                                     className="w-full h-full object-cover"
                                   />
@@ -446,7 +505,7 @@ export default function BuyerDashboard() {
                                   <div className="flex items-center mb-4">
                                     <Badge
                                       variant="outline"
-                                      className={`mr-2 ${car.brand_group === "Luxury" ? "border-purple-300 text-purple-700" : "border-blue-300 text-blue-700"}`}
+                                      className={mr-2 ${car.brand_group === "Luxury" ? "border-purple-300 text-purple-700" : "border-blue-300 text-blue-700"}}
                                     >
                                       {car.brand_group}
                                     </Badge>
@@ -576,6 +635,6 @@ export default function BuyerDashboard() {
           </div>
         </div>
       </div>
-    </div>
-  )
+    </div>
+  )
 }
