@@ -6,17 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  CheckCircle,
-  MapPin,
-  Star,
-  Wrench,
-  Clock,
-  Phone,
-  Navigation,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react"
+import { CheckCircle, MapPin, Star, Wrench, Clock, Phone, Navigation, ArrowRight, Sparkles } from "lucide-react"
 
 declare global {
   interface Window {
@@ -57,19 +47,10 @@ export default function CarPurchasedPage() {
 
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    if (!apiKey) {
-      console.error("Missing Google Maps API key in environment variables.")
-      return
-    }
-
     const script = document.createElement("script")
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`
     script.async = true
-    script.onload = () => {
-      console.log("Google Maps API loaded.")
-    }
     document.head.appendChild(script)
-
     return () => {
       if (document.head.contains(script)) {
         document.head.removeChild(script)
@@ -78,9 +59,7 @@ export default function CarPurchasedPage() {
   }, [])
 
   const handleCheckToggle = (check: string) => {
-    setSelectedChecks((prev) =>
-      prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]
-    )
+    setSelectedChecks((prev) => (prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]))
   }
 
   const findRepairShops = () => {
@@ -92,53 +71,51 @@ export default function CarPurchasedPage() {
     setLoading(true)
     setShowRepairShops(true)
 
-    setTimeout(() => {
-      const mockRepairShops: RepairShop[] = [
-        {
-          name: "מוסך אלון - בדיקות טכניות מקצועיות",
-          rating: 4.8,
-          address: "רחוב הרצל 45, תל אביב",
-          phone: "03-5551234",
-          distance: "1.2 ק"מ",
-          isOpen: true,
-        },
-        {
-          name: "מרכז בדיקות BMW מורשה",
-          rating: 4.6,
-          address: "שדרות רוקח 15, תל אביב",
-          phone: "03-5555678",
-          distance: "2.1 ק"מ",
-          isOpen: true,
-        },
-        {
-          name: "מוסך דוד - בדיקות מהירות",
-          rating: 4.4,
-          address: "רחוב יהודה הלוי 23, תל אביב",
-          phone: "03-5559876",
-          distance: "1.8 ק"מ",
-          isOpen: false,
-        },
-        {
-          name: "אוטו סנטר - בדיקות מקיפות",
-          rating: 4.7,
-          address: "רחוב דיזנגוף 112, תל אביב",
-          phone: "03-5554321",
-          distance: "2.5 ק"מ",
-          isOpen: true,
-        },
-        {
-          name: "מוסך הכוכב - מומחים לבדיקות רכב",
-          rating: 4.9,
-          address: "רחוב אבן גבירול 78, תל אביב",
-          phone: "03-5557890",
-          distance: "1.6 ק"מ",
-          isOpen: true,
-        },
-      ]
-
-      setRepairShops(mockRepairShops)
+    if (!navigator.geolocation) {
+      alert("המיקום שלך אינו זמין בדפדפן.")
       setLoading(false)
-    }, 2000)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLocation = new window.google.maps.LatLng(
+          position.coords.latitude,
+          position.coords.longitude
+        )
+
+        const map = new window.google.maps.Map(document.createElement("div"))
+        const service = new window.google.maps.places.PlacesService(map)
+
+        const request = {
+          location: userLocation,
+          radius: 5000,
+          type: "car_repair"
+        }
+
+        service.nearbySearch(request, (results: any[], status: string) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            const shops: RepairShop[] = results.slice(0, 5).map((place) => ({
+              name: place.name,
+              rating: place.rating || 0,
+              address: place.vicinity,
+              phone: "",
+              distance: "כ-5 ק\"מ",
+              isOpen: place.opening_hours?.open_now ?? false,
+            }))
+            setRepairShops(shops)
+          } else {
+            alert("לא נמצאו מוסכים באזור שלך.")
+          }
+          setLoading(false)
+        })
+      },
+      (error) => {
+        alert("לא ניתן לגשת למיקום שלך.")
+        console.error(error)
+        setLoading(false)
+      }
+    )
   }
 
   const openInGoogleMaps = (address: string) => {
