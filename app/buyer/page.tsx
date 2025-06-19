@@ -397,4 +397,287 @@ export default function BuyerDashboard() {
                  variant="outline"
                  size="sm"
                  className="w-full text-xs border-red-200 hover:border-red-300 hover:bg-red-50"
-        
+               >
+                 איפוס נתונים (לבדיקות)
+               </Button>
+             </CardContent>
+           </Card>
+         </div>
+
+
+         {/* Chat Interface */}
+         <div className="lg:col-span-3">
+           <Card className="h-[calc(100vh-200px)] shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+             <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+               <CardTitle className="flex items-center text-xl">
+                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3">
+                   <MessageCircle className="h-5 w-5" />
+                 </div>
+                 AI Car Buying Assistant
+                 <div className="ml-auto flex items-center">
+                   <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                   <span className="text-sm text-blue-100">Online</span>
+                 </div>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="flex flex-col h-full p-0">
+               {/* Messages */}
+               <ScrollArea className="flex-1 p-6">
+                 <div className="space-y-6">
+                   {messages.map((message) => (
+                     <div
+                       key={message.id}
+                       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                     >
+                       <div
+                         className={`flex max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                       >
+                         <Avatar
+                           className={`h-10 w-10 ${
+                             message.role === "user" ? "ml-3" : "mr-3"
+                           } shadow-lg border-2 border-white`}
+                         >
+                           <AvatarFallback
+                             className={
+                               message.role === "user"
+                                 ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                                 : "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                             }
+                           >
+                             {message.role === "user" ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                           </AvatarFallback>
+                         </Avatar>
+                         <div
+                           className={`p-4 rounded-2xl shadow-lg ${
+                             message.role === "user"
+                               ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                               : "bg-white border border-gray-200 text-gray-900"
+                           }`}
+                         >
+                           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                           <p
+                             className={`text-xs mt-2 ${message.role === "user" ? "text-blue-100" : "text-gray-500"}`}
+                           >
+                             {message.timestamp.toLocaleTimeString()}
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   ))}
+
+
+                   {/* Car Recommendations */}
+                   {carRecommendations.length > 0 && (
+                     <div className="space-y-4">
+                       {carRecommendations.map((car, index) => {
+                         const features = []
+                         if (car["4x4"]) features.push("4X4")
+                         if (car.economical) features.push("חסכוני")
+                         if (car.cruise_control) features.push("בקרת שיוט")
+                         if (car.distance_control) features.push("בקרת מרחק")
+                         if (car.adaptive_cruise_control) features.push("בקרת שיוט אדפטיבית")
+                         if (car.magnesium_wheels) features.push("חישוקי מגנזיום")
+
+
+                         return (
+                           <Card
+                             key={index}
+                             className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 overflow-hidden"
+                           >
+                             <div className="relative">
+                               <div className="absolute top-4 right-4 z-10">
+                                 <Badge className="bg-green-600 text-white px-3 py-1 text-lg font-bold">
+                                   {car.price.toLocaleString()}₪
+                                 </Badge>
+                               </div>
+                               <div className="absolute top-4 left-4 z-10">
+                                 <Badge variant="secondary" className="bg-black/70 text-white px-2 py-1">
+                                   {car.year}
+                                 </Badge>
+                               </div>
+                               <div className="h-48 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+                                 <img
+                                   src={`/placeholder.svg?height=200&width=400&text=${encodeURIComponent(car.car_name)}`}
+                                   alt={car.car_name}
+                                   className="w-full h-full object-cover"
+                                 />
+                               </div>
+                             </div>
+
+
+                             <CardContent className="p-6">
+                               <div className="mb-4">
+                                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{car.car_name}</h3>
+                                 <div className="flex items-center text-gray-600 mb-4">
+                                   <Calendar className="h-4 w-4 mr-2" />
+                                   <span className="mr-4">{car.year}</span>
+                                   <Settings className="h-4 w-4 mr-2" />
+                                   <span className="mr-4">יד {car.hand_num}</span>
+                                   {car.valid_test && (
+                                     <>
+                                       <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                                       <span>טסט תקף</span>
+                                     </>
+                                   )}
+                                 </div>
+                               </div>
+
+
+                               <div className="grid grid-cols-2 gap-4 mb-6">
+                                 <div className="bg-blue-50 rounded-lg p-3 text-center">
+                                   <div className="text-2xl font-bold text-blue-600">{car.horse_power}</div>
+                                   <div className="text-sm text-gray-600">כוח סוס</div>
+                                 </div>
+                                 <div className="bg-green-50 rounded-lg p-3 text-center">
+                                   <div className="text-2xl font-bold text-green-600">{car.engine_volume}L</div>
+                                   <div className="text-sm text-gray-600">נפח מנוע</div>
+                                 </div>
+                               </div>
+
+
+                               <div className="mb-6">
+                                 <div className="flex items-center mb-2">
+                                   <Fuel className="h-4 w-4 mr-2 text-gray-600" />
+                                   <span className="text-gray-700 font-medium">סוג דלק: {car.fuel_type}</span>
+                                 </div>
+                                 <div className="flex items-center mb-4">
+                                   <Badge
+                                     variant="outline"
+                                     className={`mr-2 ${car.brand_group === "Luxury" ? "border-purple-300 text-purple-700" : "border-blue-300 text-blue-700"}`}
+                                   >
+                                     {car.brand_group}
+                                   </Badge>
+                                 </div>
+                               </div>
+
+
+                               {features.length > 0 && (
+                                 <div className="mb-6">
+                                   <h4 className="font-semibold text-gray-900 mb-2">תכונות מיוחדות:</h4>
+                                   <div className="flex flex-wrap gap-2">
+                                     {features.map((feature, featureIndex) => (
+                                       <Badge
+                                         key={featureIndex}
+                                         variant="secondary"
+                                         className="bg-gray-100 text-gray-700"
+                                       >
+                                         {feature}
+                                       </Badge>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+
+
+                               <div className="border-t border-gray-200 pt-6">
+                                 <h4 className="font-semibold text-gray-900 mb-3">פרטי המוכר:</h4>
+                                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                   <div className="flex items-center mb-2">
+                                     <User className="h-4 w-4 mr-2 text-gray-600" />
+                                     <span className="font-medium">{car.contact.name}</span>
+                                   </div>
+                                   <div className="flex items-center mb-2">
+                                     <Phone className="h-4 w-4 mr-2 text-gray-600" />
+                                     <span>{car.contact.phone}</span>
+                                   </div>
+                                   <div className="flex items-center mb-2">
+                                     <Mail className="h-4 w-4 mr-2 text-gray-600" />
+                                     <span>{car.contact.email}</span>
+                                   </div>
+                                   <div className="flex items-center">
+                                     <MapPin className="h-4 w-4 mr-2 text-gray-600" />
+                                     <span>{car.contact.location}</span>
+                                   </div>
+                                 </div>
+
+
+                                 <Button
+                                   onClick={() => handleContactSeller(car.contact)}
+                                   className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                                 >
+                                   <Phone className="h-4 w-4 mr-2" />
+                                   יצירת קשר עם המוכר
+                                 </Button>
+                               </div>
+                             </CardContent>
+                           </Card>
+                         )
+                       })}
+                     </div>
+                   )}
+
+
+                   {loading && (
+                     <div className="flex justify-start">
+                       <div className="flex">
+                         <Avatar className="h-10 w-10 mr-3 shadow-lg border-2 border-white">
+                           <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                             <Bot className="h-5 w-5" />
+                           </AvatarFallback>
+                         </Avatar>
+                         <div className="bg-white border border-gray-200 p-4 rounded-2xl shadow-lg">
+                           <div className="flex space-x-2">
+                             <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+                             <div
+                               className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
+                               style={{ animationDelay: "0.1s" }}
+                             ></div>
+                             <div
+                               className="w-3 h-3 bg-green-500 rounded-full animate-bounce"
+                               style={{ animationDelay: "0.2s" }}
+                             ></div>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+                   <div ref={messagesEndRef} />
+                 </div>
+               </ScrollArea>
+
+
+               {/* Input */}
+               <div className="p-6 bg-gray-50 border-t border-gray-200">
+                 {isLimitReached ? (
+                   <div className="text-center">
+                     <p className="text-gray-600 mb-4">הגעת למגבלת ההמלצות החינמיות</p>
+                     <Button
+                       onClick={() => router.push("/pro-subscription")}
+                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                     >
+                       שדרג למנוי PRO
+                     </Button>
+                   </div>
+                 ) : (
+                   <>
+                     <div className="flex space-x-3">
+                       <Input
+                         value={input}
+                         onChange={(e) => setInput(e.target.value)}
+                         placeholder="Type your message about cars, budget, preferences..."
+                         onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                         disabled={loading}
+                         className="flex-1 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl bg-white shadow-sm"
+                       />
+                       <Button
+                         onClick={handleSendMessage}
+                         disabled={loading || !input.trim()}
+                         className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                       >
+                         <Send className="h-5 w-5" />
+                       </Button>
+                     </div>
+                     <p className="text-xs text-gray-500 mt-2 text-center">
+                       Press Enter to send • המלצות רכבים נותרות: {2 - recommendationsCount}
+                     </p>
+                   </>
+                 )}
+               </div>
+             </CardContent>
+           </Card>
+         </div>
+       </div>
+     </div>
+   </div>
+ )
+}
