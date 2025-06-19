@@ -6,17 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  CheckCircle,
-  MapPin,
-  Star,
-  Wrench,
-  Clock,
-  Phone,
-  Navigation,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react"
+import { CheckCircle, MapPin, Star, Wrench, Clock, Phone, Navigation, ArrowRight, Sparkles } from "lucide-react"
 
 declare global {
   interface Window {
@@ -60,10 +50,7 @@ export default function CarPurchasedPage() {
     const script = document.createElement("script")
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`
     script.async = true
-    script.defer = true
-    script.onload = () => console.log("Google Maps API loaded")
     document.head.appendChild(script)
-
     return () => {
       if (document.head.contains(script)) {
         document.head.removeChild(script)
@@ -72,13 +59,11 @@ export default function CarPurchasedPage() {
   }, [])
 
   const handleCheckToggle = (check: string) => {
-    setSelectedChecks((prev) =>
-      prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]
-    )
+    setSelectedChecks((prev) => (prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]))
   }
 
   const findRepairShops = () => {
-    if (!window.google) {
+    if (!window.google || !window.google.maps) {
       alert("Google Maps לא נטען עדיין. אנא נסה שוב.")
       return
     }
@@ -86,44 +71,57 @@ export default function CarPurchasedPage() {
     setLoading(true)
     setShowRepairShops(true)
 
-    const mockRepairShops: RepairShop[] = [
-      {
-        name: "מוסך אלון - בדיקות טכניות מקצועיות",
-        rating: 4.8,
-        address: "רחוב הרצל 45, תל אביב",
-        phone: "03-5551234",
-        distance: "1.2 ק\"מ",
-        isOpen: true,
-      },
-      {
-        name: "מרכז בדיקות BMW מורשה",
-        rating: 4.6,
-        address: "שדרות רוקח 15, תל אביב",
-        phone: "03-5555678",
-        distance: "2.1 ק\"מ",
-        isOpen: true,
-      },
-      {
-        name: "מוסך דוד - בדיקות מהירות",
-        rating: 4.4,
-        address: "רחוב יהודה הלוי 23, תל אביב",
-        phone: "03-5559876",
-        distance: "1.8 ק\"מ",
-        isOpen: false,
-      },
-    ]
-
-    setTimeout(() => {
-      setRepairShops(mockRepairShops)
+    if (!navigator.geolocation) {
+      alert("המיקום שלך אינו זמין בדפדפן.")
       setLoading(false)
-    }, 1500)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLocation = new window.google.maps.LatLng(
+          position.coords.latitude,
+          position.coords.longitude
+        )
+
+        const map = new window.google.maps.Map(document.createElement("div"))
+        const service = new window.google.maps.places.PlacesService(map)
+
+        const request = {
+          location: userLocation,
+          radius: 5000,
+          type: "car_repair"
+        }
+
+        service.nearbySearch(request, (results: any[], status: string) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            const shops: RepairShop[] = results.slice(0, 5).map((place) => ({
+              name: place.name,
+              rating: place.rating || 0,
+              address: place.vicinity,
+              phone: "", // לא ניתן דרך nearbySearch. דרוש details API
+              distance: "כ-5 ק\"מ",
+              isOpen: place.opening_hours?.open_now ?? false,
+            }))
+            setRepairShops(shops)
+          } else {
+            alert("לא נמצאו מוסכים באזור שלך.")
+          }
+          setLoading(false)
+        })
+      },
+      (error) => {
+        alert("לא ניתן לגשת למיקום שלך.")
+        console.error(error)
+        setLoading(false)
+      }
+    )
   }
 
   const openInGoogleMaps = (address: string) => {
-    const encoded = encodeURIComponent(address)
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encoded}`, "_blank")
+    const encodedAddress = encodeURIComponent(address)
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, "_blank")
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
       <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-green-100 sticky top-0 z-50">
