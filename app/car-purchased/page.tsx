@@ -50,8 +50,8 @@ export default function CarPurchasedPage() {
 
   useEffect(() => {
     // טעינת Google Maps API
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    const script = document.createElement("script")
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDZT4USQ-MU6DycIUZGeCLCzklS0TF-8yY&libraries=places`
     script.async = true
     document.head.appendChild(script)
 
@@ -218,7 +218,7 @@ export default function CarPurchasedPage() {
 
   const openInGoogleMaps = (address: string) => {
     const encodedAddress = encodeURIComponent(address)
-    window.open(https://www.google.com/maps/search/?api=1&query=${encodedAddress}, "_blank")
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, "_blank")
   }
 
   return (
@@ -436,6 +436,9 @@ export default function CarPurchasedPage() {
           </Card>
         )}
       </div>
-    </div>
-  )
+    </div>
+  )
 }
+
+
+
