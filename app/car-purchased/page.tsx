@@ -1,6 +1,7 @@
+You said:
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +22,6 @@ interface RepairShop {
   phone: string
   distance: string
   isOpen: boolean
-  location?: google.maps.LatLng
 }
 
 export default function CarPurchasedPage() {
@@ -30,9 +30,6 @@ export default function CarPurchasedPage() {
   const [showRepairShops, setShowRepairShops] = useState(false)
   const [repairShops, setRepairShops] = useState<RepairShop[]>([])
   const [loading, setLoading] = useState(false)
-  const [searchLocation, setSearchLocation] = useState<string>("תל אביב") // ברירת מחדל
-  const autocompleteRef = useRef<HTMLInputElement>(null)
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null)
 
   const carChecks = [
     "בדיקת פנסים קדמיים ואחוריים",
@@ -50,42 +47,18 @@ export default function CarPurchasedPage() {
   ]
 
   useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script")
-      script.src = https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places
-      script.async = true
-      document.head.appendChild(script)
+    // טעינת Google Maps API
+    const script = document.createElement("script")
+    script.src = https://maps.googleapis.com/maps/api/js?key=AIzaSyDZT4USQ-MU6DycIUZGeCLCzklS0TF-8yY&libraries=places
+    script.async = true
+    document.head.appendChild(script)
 
-      script.onload = () => {
-        if (autocompleteRef.current) {
-          setAutocomplete(new window.google.maps.places.Autocomplete(autocompleteRef.current, { types: ["(cities)"], componentRestrictions: { country: "il" } }))
-        }
-      }
-    } else {
-      if (autocompleteRef.current) {
-        setAutocomplete(new window.google.maps.places.Autocomplete(autocompleteRef.current, { types: ["(cities)"], componentRestrictions: { country: "il" } }))
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script)
       }
     }
   }, [])
-
-  useEffect(() => {
-    if (!autocomplete) return
-
-    const listener = autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace()
-      if (place.formatted_address) {
-        setSearchLocation(place.formatted_address)
-      } else if (place.name) {
-        setSearchLocation(place.name)
-      }
-    })
-
-    return () => {
-      if (listener) {
-        listener.remove()
-      }
-    }
-  }, [autocomplete])
 
   const handleCheckToggle = (check: string) => {
     setSelectedChecks((prev) => (prev.includes(check) ? prev.filter((c) => c !== check) : [...prev, check]))
@@ -100,60 +73,54 @@ export default function CarPurchasedPage() {
     setLoading(true)
     setShowRepairShops(true)
 
-    // מחפש מוסכים באזור לפי searchLocation
-    const service = new window.google.maps.places.PlacesService(document.createElement("div"))
-    const request = {
-      query: "מוסך",
-      location: null as google.maps.LatLng | null,
-      radius: 15000, // 15 ק"מ
-    }
+    // סימולציה של חיפוש מוסכים (במקום API אמיתי)
+    setTimeout(() => {
+      const mockRepairShops: RepairShop[] = [
+        {
+          name: "מוסך אלון - בדיקות טכניות מקצועיות",
+          rating: 4.8,
+          address: "רחוב הרצל 45, תל אביב",
+          phone: "03-5551234",
+          distance: '1.2 ק"מ',
+          isOpen: true,
+        },
+        {
+          name: "מרכז בדיקות BMW מורשה",
+          rating: 4.6,
+          address: "שדרות רוקח 15, תל אביב",
+          phone: "03-5555678",
+          distance: '2.1 ק"מ',
+          isOpen: true,
+        },
+        {
+          name: "מוסך דוד - בדיקות מהירות",
+          rating: 4.4,
+          address: "רחוב יהודה הלוי 23, תל אביב",
+          phone: "03-5559876",
+          distance: '1.8 ק"מ',
+          isOpen: false,
+        },
+        {
+          name: "אוטו סנטר - בדיקות מקיפות",
+          rating: 4.7,
+          address: "רחוב דיזנגוף 112, תל אביב",
+          phone: "03-5554321",
+          distance: '2.5 ק"מ',
+          isOpen: true,
+        },
+        {
+          name: "מוסך הכוכב - מומחים לבדיקות רכב",
+          rating: 4.9,
+          address: "רחוב אבן גבירול 78, תל אביב",
+          phone: "03-5557890",
+          distance: '1.6 ק"מ',
+          isOpen: true,
+        },
+      ]
 
-    // משתמש ב-Geocode כדי לקבל מיקום מהטקסט
-    const geocoder = new window.google.maps.Geocoder()
-    geocoder.geocode({ address: searchLocation }, (results, status) => {
-      if (status === "OK" && results && results.length > 0) {
-        request.location = results[0].geometry.location
-
-        service.textSearch(request, (results, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-            // ממירים את התוצאות למבנה RepairShop
-            const shops = results.slice(0, 10).map((place) => ({
-              name: place.name || "לא ידוע",
-              rating: place.rating || 0,
-              address: place.formatted_address || "",
-              phone: place.formatted_phone_number || "אין מידע",
-              distance: calculateDistance(request.location!, place.geometry?.location) + " ק\"מ",
-              isOpen: place.opening_hours?.isOpen() ?? false,
-              location: place.geometry?.location,
-            }))
-            setRepairShops(shops)
-          } else {
-            alert("לא נמצאו מוסכים באזור זה.")
-            setRepairShops([])
-          }
-          setLoading(false)
-        })
-      } else {
-        alert("לא הצלחנו למצוא את המיקום שהוזן. אנא נסה שוב.")
-        setLoading(false)
-      }
-    })
-  }
-
-  // פונקציה לחישוב מרחק בק"מ בין שני נקודות גיאוגרפיות
-  function calculateDistance(loc1: google.maps.LatLng, loc2?: google.maps.LatLng) {
-    if (!loc2) return "לא ידוע"
-    const R = 6371 // רדיוס כדור הארץ בק"מ
-    const dLat = deg2rad(loc2.lat() - loc1.lat())
-    const dLon = deg2rad(loc2.lng() - loc1.lng())
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(loc1.lat())) * Math.cos(deg2rad(loc2.lat())) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return (R * c).toFixed(1)
-  }
-  function deg2rad(deg: number) {
-    return deg * (Math.PI / 180)
+      setRepairShops(mockRepairShops)
+      setLoading(false)
+    }, 2000)
   }
 
   const openInGoogleMaps = (address: string) => {
@@ -219,7 +186,9 @@ export default function CarPurchasedPage() {
                 <div
                   key={index}
                   className={flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    selectedChecks.includes(check) ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300"
+                    selectedChecks.includes(check)
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }}
                   onClick={() => handleCheckToggle(check)}
                 >
@@ -233,23 +202,6 @@ export default function CarPurchasedPage() {
                   </label>
                 </div>
               ))}
-            </div>
-
-            {/* שדה חיפוש מיקום ידני */}
-            <div className="mb-6 text-right">
-              <label htmlFor="location-input" className="block mb-2 font-semibold text-gray-700">
-                חפש מוסכים באזור אחר (עיר/כתובת):
-              </label>
-              <input
-                id="location-input"
-                ref={autocompleteRef}
-                type="text"
-                placeholder="הקלד עיר או כתובת"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                defaultValue={searchLocation}
-                onChange={(e) => setSearchLocation(e.target.value)}
-                dir="rtl"
-              />
             </div>
 
             <div className="text-center">
@@ -292,12 +244,10 @@ export default function CarPurchasedPage() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">מחפש מוסכים מתאימים לבדיקות שבחרת...</p>
                 </div>
-              ) : repairShops.length === 0 ? (
-                <p className="text-center text-gray-600">לא נמצאו מוסכים מתאימים באזור זה.</p>
               ) : (
                 <div className="space-y-6">
                   <p className="text-gray-600 mb-6">
-                    מצאנו {repairShops.length} מוסכים מומלצים באזור {searchLocation} שמתמחים בבדיקות שבחרת:
+                    מצאנו {repairShops.length} מוסכים מומלצים באזורך שמתמחים בבדיקות שבחרת:
                   </p>
 
                   {repairShops.map((shop, index) => (
@@ -319,7 +269,7 @@ export default function CarPurchasedPage() {
                                     }}
                                   />
                                 ))}
-                                <span className="ml-2 text-gray-600 font-medium">{shop.rating.toFixed(1)}</span>
+                                <span className="ml-2 text-gray-600 font-medium">{shop.rating}</span>
                               </div>
                               <Badge
                                 variant={shop.isOpen ? "default" : "secondary"}
@@ -337,11 +287,11 @@ export default function CarPurchasedPage() {
 
                         <div className="space-y-2 mb-4">
                           <div className="flex items-center text-gray-600">
-                            <MapPin className="h-4 w-4 ml-2" />
+                            <MapPin className="h-4 w-4 mr-2" />
                             <span>{shop.address}</span>
                           </div>
                           <div className="flex items-center text-gray-600">
-                            <Phone className="h-4 w-4 ml-2" />
+                            <Phone className="h-4 w-4 mr-2" />
                             <span>{shop.phone}</span>
                           </div>
                         </div>
@@ -351,11 +301,11 @@ export default function CarPurchasedPage() {
                             onClick={() => openInGoogleMaps(shop.address)}
                             className="flex-1 bg-blue-600 hover:bg-blue-700"
                           >
-                            <Navigation className="h-4 w-4 ml-2" />
+                            <Navigation className="h-4 w-4 mr-2" />
                             נווט במפות גוגל
                           </Button>
                           <Button variant="outline" className="flex-1">
-                            <Phone className="h-4 w-4 ml-2" />
+                            <Phone className="h-4 w-4 mr-2" />
                             התקשר
                           </Button>
                         </div>
