@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckCircle, MapPin, Star, Wrench, Clock, Phone, Navigation, ArrowRight, Sparkles } from "lucide-react"
+import {
+  CheckCircle,
+  MapPin,
+  Star,
+  Wrench,
+  Clock,
+  Phone,
+  Navigation,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react"
 
 declare global {
   interface Window {
@@ -48,7 +58,7 @@ export default function CarPurchasedPage() {
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     const script = document.createElement("script")
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`
     script.async = true
     document.head.appendChild(script)
     return () => {
@@ -101,7 +111,7 @@ export default function CarPurchasedPage() {
               name: place.name,
               rating: place.rating || 0,
               address: place.vicinity,
-              phone: "", // מידע זה לא תמיד זמין
+              phone: "",
               distance: "כ-5 ק\"מ",
               isOpen: place.opening_hours?.open_now ?? false,
             }))
@@ -126,70 +136,66 @@ export default function CarPurchasedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
-      {/* ...header, intro, etc... */}
-
-      {/* Checklist */}
-      <div className="grid md:grid-cols-2 gap-4 mb-8">
-        {carChecks.map((check, index) => (
-          <div
-            key={index}
-            className={`flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-              selectedChecks.includes(check)
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-            onClick={() => handleCheckToggle(check)}
-          >
-            <Checkbox
-              checked={selectedChecks.includes(check)}
-              onChange={() => handleCheckToggle(check)}
-              className="order-2"
-            />
-            <label className="cursor-pointer flex-1 order-1 text-right" dir="rtl">
-              {check}
-            </label>
-          </div>
-        ))}
-      </div>
-
-      {/* מוסכים */}
-      {repairShops.map((shop, index) => (
-        <Card key={index} className="border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{shop.name}</h3>
-            <div className="flex items-center mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(shop.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
-                  }`}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 py-10 px-6">
+      <Card className="max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">בדיקה ראשונית לרכב</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {carChecks.map((check, index) => (
+              <div
+                key={index}
+                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  selectedChecks.includes(check)
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={() => handleCheckToggle(check)}
+              >
+                <Checkbox
+                  checked={selectedChecks.includes(check)}
+                  onChange={() => handleCheckToggle(check)}
                 />
-              ))}
-              <span className="ml-2 text-gray-600 font-medium">{shop.rating}</span>
-              <Badge className={shop.isOpen ? "bg-green-600 text-white ml-4" : "bg-gray-500 text-white ml-4"}>
-                <Clock className="h-3 w-3 mr-1" />
-                {shop.isOpen ? "פתוח עכשיו" : "סגור"}
-              </Badge>
-            </div>
-            <div className="text-gray-600 mb-2 flex items-center">
-              <MapPin className="h-4 w-4 mr-2" />
-              {shop.address}
-            </div>
-            <div className="flex gap-3 mt-4">
-              <Button onClick={() => openInGoogleMaps(shop.address)} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                <Navigation className="h-4 w-4 mr-2" />
-                נווט במפות גוגל
-              </Button>
-              <Button variant="outline" className="flex-1">
-                <Phone className="h-4 w-4 mr-2" />
-                התקשר
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                <label className="cursor-pointer flex-1 text-right" dir="rtl">
+                  {check}
+                </label>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Button
+              onClick={findRepairShops}
+              disabled={selectedChecks.length === 0 || loading}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3"
+            >
+              {loading ? "מחפש מוסכים..." : "מצא מוסכים מתאימים"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {showRepairShops && repairShops.length > 0 && (
+        <div className="max-w-3xl mx-auto mt-10 space-y-6">
+          {repairShops.map((shop, index) => (
+            <Card key={index}>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-2">{shop.name}</h3>
+                <div className="text-sm text-gray-600 mb-1">{shop.address}</div>
+                <div className="text-sm text-gray-600 mb-1">דירוג: {shop.rating}</div>
+                <div className="text-sm text-gray-600 mb-1">{shop.isOpen ? "פתוח עכשיו" : "סגור כעת"}</div>
+                <Button
+                  onClick={() => openInGoogleMaps(shop.address)}
+                  className="mt-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  נווט בגוגל מפות
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
