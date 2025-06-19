@@ -50,8 +50,8 @@ export default function CarPurchasedPage() {
 
   useEffect(() => {
     // טעינת Google Maps API
-    const script = document.createElement("script")
-    script.src = https://maps.googleapis.com/maps/api/js?key=AIzaSyDZT4USQ-MU6DycIUZGeCLCzklS0TF-8yY&libraries=places
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
     script.async = true
     document.head.appendChild(script)
 
