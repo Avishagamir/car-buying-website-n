@@ -1,6 +1,5 @@
 "use client"
 
-
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -30,14 +29,12 @@ import {
 import { auth } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 
-
 interface Message {
  id: string
  content: string
  role: "user" | "assistant"
  timestamp: Date
 }
-
 
 interface CarRecommendation {
  brand: string
@@ -66,7 +63,6 @@ interface CarRecommendation {
  }
 }
 
-
 export default function BuyerDashboard() {
  const [messages, setMessages] = useState<Message[]>([
    {
@@ -87,7 +83,6 @@ export default function BuyerDashboard() {
  const [chatHistory, setChatHistory] = useState<Message[]>([])
  const [savedRecommendations, setSavedRecommendations] = useState<CarRecommendation[]>([])
 
-
  // טעינת מספר ההמלצות מ-localStorage
  useEffect(() => {
    // טעינת מספר ההמלצות מ-localStorage
@@ -99,7 +94,6 @@ export default function BuyerDashboard() {
        setIsLimitReached(true)
      }
    }
-
 
    // טעינת היסטוריית הצ'אט מ-localStorage
    const savedChatHistory = localStorage.getItem("chatHistory")
@@ -117,7 +111,6 @@ export default function BuyerDashboard() {
      }
    }
 
-
    // טעינת המלצות שמורות מ-localStorage
    const savedRecs = localStorage.getItem("savedRecommendations")
    if (savedRecs) {
@@ -131,7 +124,6 @@ export default function BuyerDashboard() {
    }
  }, [])
 
-
  // שמירת מספר ההמלצות ב-localStorage כשהוא משתנה
  useEffect(() => {
    localStorage.setItem("recommendationsCount", recommendationsCount.toString())
@@ -139,7 +131,6 @@ export default function BuyerDashboard() {
      setIsLimitReached(true)
    }
  }, [recommendationsCount])
-
 
  // הוסף useEffect חדש לשמירת היסטוריה
  useEffect(() => {
@@ -149,27 +140,22 @@ export default function BuyerDashboard() {
    }
  }, [messages])
 
-
  useEffect(() => {
    if (carRecommendations.length > 0) {
      localStorage.setItem("savedRecommendations", JSON.stringify(carRecommendations))
    }
  }, [carRecommendations])
 
-
  const scrollToBottom = () => {
    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
  }
-
 
  useEffect(() => {
    scrollToBottom()
  }, [messages, carRecommendations])
 
-
  const handleSendMessage = async () => {
    if (!input.trim() || loading || isLimitReached) return
-
 
    const userMessage: Message = {
      id: Date.now().toString(),
@@ -178,11 +164,9 @@ export default function BuyerDashboard() {
      timestamp: new Date(),
    }
 
-
    setMessages((prev) => [...prev, userMessage])
    setInput("")
    setLoading(true)
-
 
    try {
      const response = await fetch("/api/chat/buyer", {
@@ -199,14 +183,11 @@ export default function BuyerDashboard() {
        }),
      })
 
-
      if (!response.ok) {
        throw new Error("Failed to get response")
      }
 
-
      const data = await response.json()
-
 
      const assistantMessage: Message = {
        id: (Date.now() + 1).toString(),
@@ -215,9 +196,7 @@ export default function BuyerDashboard() {
        timestamp: new Date(),
      }
 
-
      setMessages((prev) => [...prev, assistantMessage])
-
 
      // עדכון מספר ההמלצות רק אם נמצאו רכבים
      if (data.foundCars) {
@@ -226,7 +205,6 @@ export default function BuyerDashboard() {
        setCarRecommendations(data.carRecommendations || [])
        localStorage.setItem("recommendationsCount", newCount.toString())
      }
-
 
      if (data.isLimitReached) {
        setIsLimitReached(true)
@@ -242,10 +220,8 @@ export default function BuyerDashboard() {
      setMessages((prev) => [...prev, errorMessage])
    }
 
-
    setLoading(false)
  }
-
 
  const handleSignOut = async () => {
    try {
@@ -256,12 +232,10 @@ export default function BuyerDashboard() {
    }
  }
 
-
  const handleContactSeller = (contact: any) => {
    // כאן לא נעשה כלום - רק הודעה
    router.push("/car-purchased")
  }
-
 
  const quickSuggestions = [
    "I'm looking for a family SUV under $40k",
@@ -269,7 +243,6 @@ export default function BuyerDashboard() {
    "I need a truck for work",
    "What's the best luxury car for $60k?",
  ]
-
 
  const resetData = () => {
    localStorage.removeItem("recommendationsCount")
@@ -289,7 +262,6 @@ export default function BuyerDashboard() {
      },
    ])
  }
-
 
  return (
    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -326,7 +298,6 @@ export default function BuyerDashboard() {
        </div>
      </header>
 
-
      {/* Main Content */}
      <div className=" mx-auto p-6">
        <div className="grid lg:grid-cols-4 gap-6">
@@ -349,7 +320,6 @@ export default function BuyerDashboard() {
                </p>
              </CardContent>
            </Card>
-
 
            {/* Quick Actions */}
            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -374,7 +344,6 @@ export default function BuyerDashboard() {
              </CardContent>
            </Card>
 
-
            {/* Chat Stats */}
            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
              <CardContent className="p-4">
@@ -387,7 +356,6 @@ export default function BuyerDashboard() {
                </div>
              </CardContent>
            </Card>
-
 
            {/* Reset Button - רק לבדיקות */}
            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -403,7 +371,6 @@ export default function BuyerDashboard() {
              </CardContent>
            </Card>
          </div>
-
 
          {/* Chat Interface */}
          <div className="lg:col-span-3">
@@ -465,7 +432,6 @@ export default function BuyerDashboard() {
                      </div>
                    ))}
 
-
                    {/* Car Recommendations */}
                    {carRecommendations.length > 0 && (
                      <div className="space-y-4">
@@ -477,7 +443,6 @@ export default function BuyerDashboard() {
                          if (car.distance_control) features.push("בקרת מרחק")
                          if (car.adaptive_cruise_control) features.push("בקרת שיוט אדפטיבית")
                          if (car.magnesium_wheels) features.push("חישוקי מגנזיום")
-
 
                          return (
                            <Card
@@ -504,7 +469,6 @@ export default function BuyerDashboard() {
                                </div>
                              </div>
 
-
                              <CardContent className="p-6">
                                <div className="mb-4">
                                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{car.car_name}</h3>
@@ -522,7 +486,6 @@ export default function BuyerDashboard() {
                                  </div>
                                </div>
 
-
                                <div className="grid grid-cols-2 gap-4 mb-6">
                                  <div className="bg-blue-50 rounded-lg p-3 text-center">
                                    <div className="text-2xl font-bold text-blue-600">{car.horse_power}</div>
@@ -533,7 +496,6 @@ export default function BuyerDashboard() {
                                    <div className="text-sm text-gray-600">נפח מנוע</div>
                                  </div>
                                </div>
-
 
                                <div className="mb-6">
                                  <div className="flex items-center mb-2">
@@ -549,7 +511,6 @@ export default function BuyerDashboard() {
                                    </Badge>
                                  </div>
                                </div>
-
 
                                {features.length > 0 && (
                                  <div className="mb-6">
@@ -567,7 +528,6 @@ export default function BuyerDashboard() {
                                    </div>
                                  </div>
                                )}
-
 
                                <div className="border-t border-gray-200 pt-6">
                                  <h4 className="font-semibold text-gray-900 mb-3">פרטי המוכר:</h4>
@@ -590,7 +550,6 @@ export default function BuyerDashboard() {
                                    </div>
                                  </div>
 
-
                                  <Button
                                    onClick={() => handleContactSeller(car.contact)}
                                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -605,7 +564,6 @@ export default function BuyerDashboard() {
                        })}
                      </div>
                    )}
-
 
                    {loading && (
                      <div className="flex justify-start">
@@ -634,7 +592,6 @@ export default function BuyerDashboard() {
                    <div ref={messagesEndRef} />
                  </div>
                </ScrollArea>
-
 
                {/* Input */}
                <div className="p-6 bg-gray-50 border-t border-gray-200">
@@ -681,3 +638,6 @@ export default function BuyerDashboard() {
    </div>
  )
 }
+
+
+
